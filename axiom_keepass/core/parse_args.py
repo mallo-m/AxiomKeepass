@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import os
+import ipaddress
 from argparse import ArgumentParser
 from impacket.examples.utils import parse_target
 
@@ -50,6 +52,14 @@ class AxiomArgParser():
         )
 
         self._parser.add_argument(
+            "-t",
+            "--threads",
+            help="The number of threads to use, default: 10",
+            type=int,
+            default=10
+        )
+
+        self._parser.add_argument(
             "-pull",
             "--pull",
             action="store_true",
@@ -74,7 +84,7 @@ class AxiomArgParser():
 
         self._parser.add_argument(
             "target",
-            help="Target machine or range [domain/]username[:password]@<IP or FQDN>",
+            help="Target machine or range [domain/]username[:password]@<IP, IP RANGE, FQDN or FILE>",
         )
 
         self.args = self._parser.parse_args()
@@ -84,6 +94,16 @@ class AxiomArgParser():
             raise ValueError("You must parse arguments before validating them")
 
         domain, username, password, target = parse_target(self.args.target) # type: ignore
+        if os.path.exists(target):
+            result = []
+            f = open(target, 'r')
+            for l in f.readlines():
+                l = l.strip()
+                result.extend([str(ip) for ip in ipaddress.ip_network(l, strict=False).hosts()])
+            f.close()
+            target = result
+        else:
+            target = [str(ip) for ip in ipaddress.ip_network(target, strict=False).hosts()]
         if self.args.hashes and not password: # type: ignore
             lm_hash, nt_hash = self.args.hashes.split(":") # type: ignore
         else:

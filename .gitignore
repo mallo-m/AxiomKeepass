@@ -2,6 +2,7 @@
 AxiomKeepass.dll
 *axiomvault.clear
 *axiomvault.enc
+targets.lst
 
 # VENV
 venv-axiomkeepass

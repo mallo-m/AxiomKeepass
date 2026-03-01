@@ -5,6 +5,7 @@ from axiom_keepass.client.download import download
 
 def pull(smbClient, thread_index, silent=False):
     users_folder = smbClient.listPath("C$", r"\Users\*")
+    print(f"[THREAD {thread_index}][*] Pulling from {smbClient.getRemoteHost()}")
     for f in users_folder:
         if f.is_directory() and f.get_longname() != "." and f.get_longname() != "..":
             if not silent:

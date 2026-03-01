@@ -83,6 +83,14 @@ class AxiomArgParser():
         )
 
         self._parser.add_argument(
+            "-kill-first",
+            "--kill-first",
+            action="store_true",
+            default=False,
+            help="Whether the attack should attempt to kill KeePass.exe processes before poisoning the installation"
+        )
+
+        self._parser.add_argument(
             "target",
             help="Target machine or range [domain/]username[:password]@<IP, IP RANGE, FQDN or FILE>",
         )

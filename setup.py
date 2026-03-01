@@ -19,11 +19,13 @@ setup(
         '../Binaries/System.Windows.Forms.dll',
         '../Assembly/AxiomKeepass.cs',
         '../Assembly/AssemblyInfo.cs',
-        '../Scripts/decrypt.sh'
+        '../Scripts/decrypt.sh',
+        '../Scripts/sch_task.xml'
     ]},
     install_requires=[
         'argparse',
-        'impacket'
+        'impacket',
+        'friendlywords'
     ],
     classifiers=[
         'Development Status :: 1 - Planning',

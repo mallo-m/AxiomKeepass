@@ -4,6 +4,11 @@ AxiomKeepass.dll
 *axiomvault.enc
 targets.lst
 
+# Source dirs
+KeePass-2.34-Source
+KeePass-2.60-Source
+venv-keepass
+
 # VENV
 venv-axiomkeepass
 venv-axiomkeepass/*

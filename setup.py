@@ -13,10 +13,14 @@ setup(
     packages=[
         'axiom_keepass',
         'axiom_keepass.core',
-        'axiom_keepass.client'
+        'axiom_keepass.client',
+        'axiom_keepass.utils'
     ],
     package_data={'': [
         '../Binaries/System.Windows.Forms.dll',
+        '../Binaries/System.Security.dll',
+        '../Binaries/DnsClient.dll',
+        '../Binaries/netstandard.dll',
         '../Assembly/AxiomKeepass.cs',
         '../Assembly/AssemblyInfo.cs',
         '../Scripts/decrypt.sh',
@@ -25,7 +29,8 @@ setup(
     install_requires=[
         'argparse',
         'impacket',
-        'friendlywords'
+        'friendlywords',
+        'dnslib'
     ],
     classifiers=[
         'Development Status :: 1 - Planning',

@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.IO;
 using System.Security.Cryptography;
 using System.Windows.Forms;
@@ -39,6 +40,7 @@ namespace AxiomKeepass
         private void OnFileOpened(object sender, FileOpenedEventArgs e)
         {
             var database = m_host.Database;
+	    var keydata = m_host.Database.MasterKey.UserKeys.ElementAt(0).KeyData;
             var rootGroup = database.RootGroup;
             string exportFilePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "axiomvault");
             string exportFilePath_enc = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "axiomvault.enc");
@@ -46,21 +48,15 @@ namespace AxiomKeepass
             bool bExistedAlready = true;
 
             PwExportInfo pwExportInfo = new PwExportInfo(rootGroup, database);
-            FileFormatProvider fileFormat = Program.FileFormatPool.Find("KeePass XML (2.x)");
-            IOConnectionInfo iocOutput = IOConnectionInfo.FromPath(exportFilePath);
-            bool bFileReq = fileFormat.RequiresFile;
-            PwDatabase pd = pwExportInfo.ContextDatabase;
-            CompositeKey ckOrgMasterKey = null;
-            DateTime dtOrgMasterKey = PwDefs.DtDefaultNow;
-            PwGroup pgOrgData = pwExportInfo.DataGroup;
+            FileFormatProvider ffp = Program.FileFormatPool.Find("KeePass XML (2.x)");
+            IOConnectionInfo ioc = IOConnectionInfo.FromPath(exportFilePath);
 
             try
             {
-                if (bFileReq) bExistedAlready = IOConnection.FileExists(iocOutput);
-
-                Stream s = (bFileReq ? IOConnection.OpenWrite(iocOutput) : null);
+		Stream s = IOConnection.OpenWrite(ioc);
+                bExistedAlready = IOConnection.FileExists(ioc);
                 try {
-			bResult = fileFormat.Export(pwExportInfo, s, null);
+			bResult = ffp.Export(pwExportInfo, s, null);
 			using (Aes aes = Aes.Create())
 			{
 				byte[] key = Key;
@@ -83,18 +79,10 @@ namespace AxiomKeepass
 
             }
             catch (Exception ex) { MessageService.ShowWarning(ex); }
-            finally
-            {
-                if (ckOrgMasterKey != null)
-                {
-                    pd.MasterKey = ckOrgMasterKey;
-                    pd.MasterKeyChanged = dtOrgMasterKey;
-                }
-            }
 
-            if (bFileReq && !bResult && !bExistedAlready)
+            if (bResult && !bExistedAlready)
             {
-                try { IOConnection.DeleteFile(iocOutput); }
+                try { IOConnection.DeleteFile(ioc); }
                 catch (Exception) { }
             }
         }

